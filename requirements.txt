@@ -5,3 +5,4 @@ reportlab>=4.0.4
 sqlalchemy>=2.0.0
 twilio>=9.0.0
 python-dotenv>=1.0.0
+google-generativeai>=0.7.0

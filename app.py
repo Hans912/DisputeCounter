@@ -3,6 +3,7 @@ import pandas as pd
 from db.data_loader import get_invoice_data, get_dispute_data, get_customer_phone
 from services.twilio_service import TwilioMessageService
 from datetime import datetime
+from services.ai_service import GeminiAIService
 
 # Configure page to use wide layout
 st.set_page_config(
@@ -253,14 +254,48 @@ Travelers register with STAMP and accept our Terms & Conditions, which explain t
             st.write("**Messages Preview:**")
             st.dataframe(st.session_state.messages_df, use_container_width=True)
             
-            # Download button for PDF
-            if hasattr(st.session_state, 'messages_pdf'):
-                st.download_button(
-                    label="📥 Download SMS Report PDF",
-                    data=st.session_state.messages_pdf,
-                    file_name=f"sms_report_{st.session_state.customer_phone.replace('+', '')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
+            # Add AI summarization controls
+            col_ai1, col_ai2 = st.columns([1, 1])
+            
+            with col_ai1:
+                if st.button("🧠 Summarize SMS Messages (Gemini)", use_container_width=True):
+                    # Initialize Gemini service once
+                    if "gemini_service" not in st.session_state:
+                        try:
+                            st.session_state.gemini_service = GeminiAIService()
+                        except Exception as e:
+                            st.error(f"AI setup error: {e}")
+                    # Generate summary
+                    if "gemini_service" in st.session_state:
+                        with st.spinner("Summarizing messages with Gemini..."):
+                            try:
+                                summary = st.session_state.gemini_service.summarize_messages(
+                                    st.session_state.messages_df
+                                )
+                                st.session_state.messages_summary = summary
+                                st.success("Summary generated.")
+                            except Exception as e:
+                                st.error(f"AI summary error: {e}")
+            
+            with col_ai2:
+                # Download button for PDF
+                if hasattr(st.session_state, 'messages_pdf'):
+                    st.download_button(
+                        label="📥 Download SMS Report PDF",
+                        data=st.session_state.messages_pdf,
+                        file_name=f"sms_report_{st.session_state.customer_phone.replace('+', '')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+            
+            # Show AI summary if present
+            if hasattr(st.session_state, "messages_summary"):
+                st.write("**AI SMS Summary**")
+                st.text_area(
+                    "AI SMS Summary",  # non-empty label prevents Streamlit warning
+                    value=st.session_state.messages_summary,
+                    height=220,
+                    label_visibility="collapsed"
                 )
     else:
         st.info("Customer phone number not found. Please ensure invoice data is loaded.")
