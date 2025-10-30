@@ -25,3 +25,14 @@ def get_customer_phone_by_id() -> str:
     FROM CustomerAuthenticationAccounts
     WHERE CustomerId = ?
     """
+
+def get_invoices_query():
+    return """
+    SELECT
+        i.InvoiceID,
+        i.CustomerID,
+        i.Amount,
+        CONVERT(NVARCHAR(33), i.CreatedAt, 127) AS CreatedAt,  -- was DATETIMEOFFSET
+        -- other columns...
+    FROM dbo.Invoices i
+    """
